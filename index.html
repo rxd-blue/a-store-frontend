@@ -10,12 +10,12 @@
   <header>
     <h1>📦 المنتجات</h1>
     <div class="filters">
-      <select onchange="filterProducts(this.value, null)" id="categoryFilter">
+      <select onchange="filterProducts(this.value, null)">
         <option value="">كل الفئات</option>
         <option value="تليفونات">تليفونات</option>
         <option value="غسالات">غسالات</option>
       </select>
-      <select onchange="filterProducts(null, this.value)" id="brandFilter">
+      <select onchange="filterProducts(null, this.value)">
         <option value="">كل الماركات</option>
         <option value="سامسونج">سامسونج</option>
         <option value="شاومي">شاومي</option>
@@ -24,12 +24,11 @@
     </div>
   </header>
 
-  <main class="products-grid">
+  <div class="products-grid">
     <div class="product" data-category="تليفونات" data-brand="سامسونج">
       <div class="product-content">
         <h3>Samsung A23</h3>
         <p>تليفونات</p>
-        <p class="price">2999 جنيه</p>
       </div>
       <button onclick="addToCart('Samsung A23', 'تليفونات')">🛒 أضف للعربة</button>
     </div>
@@ -38,7 +37,6 @@
       <div class="product-content">
         <h3>Xiaomi Note 12</h3>
         <p>تليفونات</p>
-        <p class="price">4999 جنيه</p>
       </div>
       <button onclick="addToCart('Xiaomi Note 12', 'تليفونات')">🛒 أضف للعربة</button>
     </div>
@@ -47,7 +45,6 @@
       <div class="product-content">
         <h3>LG WashPro</h3>
         <p>غسالات</p>
-        <p class="price">8999 جنيه</p>
       </div>
       <button onclick="addToCart('LG WashPro', 'غسالات')">🛒 أضف للعربة</button>
     </div>
@@ -56,11 +53,10 @@
       <div class="product-content">
         <h3>Samsung WashX</h3>
         <p>غسالات</p>
-        <p class="price">7999 جنيه</p>
       </div>
       <button onclick="addToCart('Samsung WashX', 'غسالات')">🛒 أضف للعربة</button>
     </div>
-  </main>
+  </div>
 
   <!-- Cart Overlay -->
   <div id="cart-overlay" class="cart-overlay" style="display: none;">
@@ -68,8 +64,8 @@
       <h2>🛒 عربة التسوق</h2>
       <div id="cart-overlay-items"></div>
       <div class="cart-actions">
-        <button onclick="window.location.href='cart.html'" class="checkout-btn">إتمام الشراء</button>
-        <button onclick="closeCart()" class="close-btn">إغلاق</button>
+        <button onclick="window.location.href='cart.html'">إتمام الشراء</button>
+        <button onclick="closeCart()">إغلاق</button>
       </div>
     </div>
   </div>

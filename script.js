@@ -25,15 +25,9 @@ function filterProducts(category, brand) {
 
 // Function to open cart overlay
 function openCart() {
-  if (CartState.isOpen) return;
-  
   const cartOverlay = document.getElementById('cart-overlay');
   cartOverlay.style.display = 'block';
   CartState.isOpen = true;
-  
-  // Add class to body to prevent scrolling
-  document.body.classList.add('cart-open');
-  
   renderCartOverlay();
 }
 
@@ -42,10 +36,6 @@ function closeCart() {
   const cartOverlay = document.getElementById('cart-overlay');
   cartOverlay.style.display = 'none';
   CartState.isOpen = false;
-  CartState.error = null;
-  
-  // Remove class from body to enable scrolling
-  document.body.classList.remove('cart-open');
 }
 
 // Optimized cart rendering with error handling
@@ -53,74 +43,45 @@ async function renderCartOverlay() {
   if (!CartState.isOpen) return;
 
   try {
-    CartState.isLoading = true;
     const res = await fetch(`${API_BASE_URL}/api/cart`);
-    
-    if (!res.ok) {
-      throw new Error(`HTTP error! status: ${res.status}`);
-    }
-    
     const cart = await res.json();
     
     // Check if cart contents have changed
     if (JSON.stringify(cart) === JSON.stringify(CartState.items)) {
-      CartState.isLoading = false;
       return;
     }
     
     CartState.items = cart;
     const container = document.getElementById('cart-overlay-items');
     
-    // Smooth transition for content update
-    container.style.opacity = '0';
-    
-    setTimeout(() => {
-      container.innerHTML = '';
+    container.innerHTML = '';
 
-      if (cart.length === 0) {
-        container.innerHTML = '<div class="cart-empty">🛒 العربة فاضية</div>';
-      } else {
-        cart.forEach((item, index) => {
-          const div = document.createElement('div');
-          div.className = 'cart-item';
-          div.style.animationDelay = `${index * 100}ms`;
-          div.innerHTML = `
-            <div class="cart-item-content">
-              <h3>${item.name}</h3>
-              <p>${item.category || ''}</p>
-            </div>
-            <button onclick="removeFromCart('${item.name}')" class="remove-item">✕</button>
-          `;
-          container.appendChild(div);
-        });
-      }
-      
-      container.style.opacity = '1';
-    }, 300);
+    if (cart.length === 0) {
+      container.innerHTML = '<div class="cart-empty">🛒 العربة فاضية</div>';
+    } else {
+      cart.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'cart-item';
+        div.innerHTML = `
+          <div class="cart-item-content">
+            <h3>${item.name}</h3>
+            <p>${item.category || ''}</p>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
     
   } catch (error) {
     console.error('Error fetching cart:', error);
-    CartState.error = error;
     const container = document.getElementById('cart-overlay-items');
-    container.innerHTML = `
-      <div class="cart-error">
-        <p>❌ عذراً، حدث خطأ في تحميل العربة</p>
-        <button onclick="retryCartLoad()">إعادة المحاولة</button>
-      </div>
-    `;
-  } finally {
-    CartState.isLoading = false;
+    container.innerHTML = '<div class="cart-error">❌ حدث خطأ في تحميل العربة</div>';
   }
 }
 
 // Enhanced add to cart with proper error handling
 async function addToCart(name, category) {
   try {
-    const loadingToast = document.createElement('div');
-    loadingToast.className = 'toast loading';
-    loadingToast.textContent = 'جاري إضافة المنتج...';
-    document.body.appendChild(loadingToast);
-    
     const res = await fetch(`${API_BASE_URL}/api/cart/add`, {
       method: 'POST',
       headers: {
@@ -133,135 +94,32 @@ async function addToCart(name, category) {
       throw new Error(`HTTP error! status: ${res.status}`);
     }
 
-    loadingToast.remove();
-    
-    // Show success toast
-    const successToast = document.createElement('div');
-    successToast.className = 'toast success';
-    successToast.textContent = '✅ تمت الإضافة بنجاح';
-    document.body.appendChild(successToast);
-    
-    // Remove success toast after animation
-    setTimeout(() => successToast.remove(), 2000);
-    
     // Only open cart after successful addition
     openCart();
     await renderCartOverlay();
     
   } catch (error) {
     console.error('Error adding to cart:', error);
-    const errorToast = document.createElement('div');
-    errorToast.className = 'toast error';
-    errorToast.textContent = '❌ حدث خطأ في إضافة المنتج';
-    document.body.appendChild(errorToast);
-    setTimeout(() => errorToast.remove(), 3000);
+    alert('❌ حدث خطأ في إضافة المنتج');
   }
 }
 
-// Remove from cart function
-async function removeFromCart(name) {
-  try {
-    const res = await fetch(`${API_BASE_URL}/api/cart/remove`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ name })
-    });
-
-    if (!res.ok) {
-      throw new Error(`HTTP error! status: ${res.status}`);
-    }
-
-    await renderCartOverlay();
-  } catch (error) {
-    console.error('Error removing from cart:', error);
-  }
-}
-
-// Retry mechanism for cart loading
-async function retryCartLoad() {
-  CartState.error = null;
-  await renderCartOverlay();
-}
-
-// Optimized polling with error backoff
-let pollAttempts = 0;
-const MAX_POLL_ATTEMPTS = 3;
-
+// Start polling for cart updates
 function startCartUpdates() {
   setInterval(async () => {
-    if (CartState.isOpen && !CartState.isLoading) {
-      try {
-        await renderCartOverlay();
-        pollAttempts = 0; // Reset attempts on success
-      } catch (error) {
-        pollAttempts++;
-        if (pollAttempts >= MAX_POLL_ATTEMPTS) {
-          console.error('Polling stopped due to consecutive errors');
-          return;
-        }
-      }
+    if (CartState.isOpen) {
+      await renderCartOverlay();
     }
   }, POLLING_INTERVAL);
 }
 
-// Close cart when clicking outside
-document.addEventListener('click', (e) => {
-  if (CartState.isOpen && e.target.classList.contains('cart-overlay')) {
-    closeCart();
-  }
-});
-
-// Initialize with error handling
+// Initialize
 document.addEventListener('DOMContentLoaded', () => {
-  try {
-    startCartUpdates();
-    
-    // Add keyboard support for closing cart
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && CartState.isOpen) {
-        closeCart();
-      }
-    });
-  } catch (error) {
-    console.error('Failed to initialize cart updates:', error);
-  }
+  startCartUpdates();
 });
 
-// Listen for filter updates
-async function checkFilterUpdate() {
-  try {
-    const res = await fetch('https://excellent-frill-smash.glitch.me/api/filter');
-    const data = await res.json();
-
-    // If openCart is true in the filter data, open the cart
-    if (data.openCart) {
-      openCart();
-    }
-
-    // Handle regular filter updates
-    if (data.category || data.brand) {
-      filterProducts(data.category, data.brand);
-    }
-  } catch (error) {
-    console.error('Error checking filter:', error);
-  }
-}
-
-// Start checking for filter updates
-setInterval(checkFilterUpdate, 2000);
-
-// Function to handle API-triggered cart open
-async function handleCartOpen() {
-  openCart();
-  await renderCartOverlay();
-}
-
-// Export functions for API use
+// Export functions for global use
 window.openCart = openCart;
 window.closeCart = closeCart;
 window.addToCart = addToCart;
-window.handleCartOpen = handleCartOpen;
-window.retryCartLoad = retryCartLoad;
-window.removeFromCart = removeFromCart; 
+window.filterProducts = filterProducts; 
