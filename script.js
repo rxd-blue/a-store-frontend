@@ -11,40 +11,26 @@ function filterProducts(category, brand) {
   });
 }
 
-// Add cart display functionality
-function toggleCart() {
+// Function to open cart overlay
+function openCart() {
   const cartOverlay = document.getElementById('cart-overlay');
-  cartOverlay.style.display = cartOverlay.style.display === 'none' ? 'block' : 'none';
-  if (cartOverlay.style.display === 'block') {
-    renderCartOverlay();
-  }
+  cartOverlay.style.display = 'block';
+  renderCartOverlay();
 }
 
-async function renderCartOverlay() {
-  const res = await fetch('https://excellent-frill-smash.glitch.me/api/cart');
-  const cart = await res.json();
-  const container = document.getElementById('cart-overlay-items');
-  
-  container.innerHTML = '';
-
-  if (cart.length === 0) {
-    container.innerHTML = '<p>العربة فاضية</p>';
-    return;
-  }
-
-  cart.forEach(item => {
-    const div = document.createElement('div');
-    div.className = 'cart-item';
-    div.innerHTML = `
-      <h3>${item.name}</h3>
-      <p>${item.category || ''}</p>
-    `;
-    container.appendChild(div);
-  });
+// Function to close cart overlay
+function closeCart() {
+  const cartOverlay = document.getElementById('cart-overlay');
+  cartOverlay.style.display = 'none';
 }
 
+// Function to add product to cart
 async function addToCart(name, category) {
   try {
+    // First open the cart to show loading state
+    openCart();
+    
+    // Then add the product
     await fetch('https://excellent-frill-smash.glitch.me/api/cart/add', {
       method: 'POST',
       headers: {
@@ -52,13 +38,40 @@ async function addToCart(name, category) {
       },
       body: JSON.stringify({ name, category })
     });
-    // Show cart overlay after adding item
-    const cartOverlay = document.getElementById('cart-overlay');
-    cartOverlay.style.display = 'block';
+
+    // After successful addition, update the cart display
     await renderCartOverlay();
   } catch (error) {
     console.error('Error adding to cart:', error);
     alert('❌ حدث خطأ');
+  }
+}
+
+async function renderCartOverlay() {
+  try {
+    const res = await fetch('https://excellent-frill-smash.glitch.me/api/cart');
+    const cart = await res.json();
+    const container = document.getElementById('cart-overlay-items');
+    
+    container.innerHTML = '';
+
+    if (cart.length === 0) {
+      container.innerHTML = '<p>العربة فاضية</p>';
+      return;
+    }
+
+    cart.forEach(item => {
+      const div = document.createElement('div');
+      div.className = 'cart-item';
+      div.innerHTML = `
+        <h3>${item.name}</h3>
+        <p>${item.category || ''}</p>
+      `;
+      container.appendChild(div);
+    });
+  } catch (error) {
+    console.error('Error fetching cart:', error);
+    container.innerHTML = '<p>❌ حدث خطأ في تحميل العربة</p>';
   }
 }
 
@@ -83,4 +96,20 @@ async function renderCart() {
     `;
     container.appendChild(div);
   });
-} 
+}
+
+// Start polling for cart updates when overlay is visible
+let cartUpdateInterval = null;
+
+function startCartUpdates() {
+  if (!cartUpdateInterval) {
+    cartUpdateInterval = setInterval(async () => {
+      if (document.getElementById('cart-overlay').style.display === 'block') {
+        await renderCartOverlay();
+      }
+    }, 2000);
+  }
+}
+
+// Initialize cart updates
+startCartUpdates(); 

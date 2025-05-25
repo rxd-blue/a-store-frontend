@@ -47,6 +47,7 @@ button {
   padding: 10px;
   margin: 10px 0;
   border-radius: 4px;
+  animation: fadeIn 0.3s ease-in;
 }
 
 .cart-actions {
@@ -71,4 +72,21 @@ button {
 
 .product button:hover {
   background-color: #45a049;
+}
+
+/* Loading animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.cart-item {
+  opacity: 0;
+  animation: fadeIn 0.3s ease-in forwards;
 } 
