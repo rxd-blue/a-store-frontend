@@ -12,10 +12,23 @@ function filterProducts(category, brand) {
 }
 
 // Function to open cart overlay
-function openCart() {
-  const cartOverlay = document.getElementById('cart-overlay');
-  cartOverlay.style.display = 'block';
-  renderCartOverlay();
+async function openCart() {
+  try {
+    // Send API request to open cart
+    await fetch('https://excellent-frill-smash.glitch.me/api/filter', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ openCart: true })
+    });
+
+    const cartOverlay = document.getElementById('cart-overlay');
+    cartOverlay.style.display = 'block';
+    await renderCartOverlay();
+  } catch (error) {
+    console.error('Error opening cart:', error);
+  }
 }
 
 // Function to close cart overlay
@@ -27,10 +40,7 @@ function closeCart() {
 // Function to add product to cart
 async function addToCart(name, category) {
   try {
-    // First open the cart to show loading state
-    openCart();
-    
-    // Then add the product
+    // Send API request to add product
     await fetch('https://excellent-frill-smash.glitch.me/api/cart/add', {
       method: 'POST',
       headers: {
@@ -39,7 +49,7 @@ async function addToCart(name, category) {
       body: JSON.stringify({ name, category })
     });
 
-    // After successful addition, update the cart display
+    // Update cart display
     await renderCartOverlay();
   } catch (error) {
     console.error('Error adding to cart:', error);
@@ -104,7 +114,8 @@ let cartUpdateInterval = null;
 function startCartUpdates() {
   if (!cartUpdateInterval) {
     cartUpdateInterval = setInterval(async () => {
-      if (document.getElementById('cart-overlay').style.display === 'block') {
+      const cartOverlay = document.getElementById('cart-overlay');
+      if (cartOverlay && cartOverlay.style.display === 'block') {
         await renderCartOverlay();
       }
     }, 2000);
@@ -112,4 +123,23 @@ function startCartUpdates() {
 }
 
 // Initialize cart updates
-startCartUpdates(); 
+startCartUpdates();
+
+// Listen for filter updates that might include cart open command
+async function checkFilterUpdate() {
+  try {
+    const res = await fetch('https://excellent-frill-smash.glitch.me/api/filter');
+    const data = await res.json();
+
+    if (data.openCart) {
+      openCart();
+    }
+
+    if (JSON.stringify(data) !== JSON.stringify(lastFilter)) {
+      lastFilter = data;
+      filterProducts(data.category, data.brand);
+    }
+  } catch (error) {
+    console.error('Error fetching filter:', error);
+  }
+} 
