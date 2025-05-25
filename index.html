@@ -10,19 +10,19 @@
 
   <div class="product" data-category="تليفونات" data-brand="سامسونج">
     Samsung A23
-    <button onclick="openCart(); setTimeout(() => addToCart('Samsung A23', 'تليفونات'), 500)">🛒 أضف للعربة</button>
+    <button onclick="addToCart('Samsung A23', 'تليفونات')">🛒 أضف للعربة</button>
   </div>
   <div class="product" data-category="تليفونات" data-brand="شاومي">
     Xiaomi Note 12
-    <button onclick="openCart(); setTimeout(() => addToCart('Xiaomi Note 12', 'تليفونات'), 500)">🛒 أضف للعربة</button>
+    <button onclick="addToCart('Xiaomi Note 12', 'تليفونات')">🛒 أضف للعربة</button>
   </div>
   <div class="product" data-category="غسالات" data-brand="LG">
     LG WashPro
-    <button onclick="openCart(); setTimeout(() => addToCart('LG WashPro', 'غسالات'), 500)">🛒 أضف للعربة</button>
+    <button onclick="addToCart('LG WashPro', 'غسالات')">🛒 أضف للعربة</button>
   </div>
   <div class="product" data-category="غسالات" data-brand="سامسونج">
     Samsung WashX
-    <button onclick="openCart(); setTimeout(() => addToCart('Samsung WashX', 'غسالات'), 500)">🛒 أضف للعربة</button>
+    <button onclick="addToCart('Samsung WashX', 'غسالات')">🛒 أضف للعربة</button>
   </div>
 
   <!-- Cart Overlay -->
@@ -41,26 +41,18 @@
 
   <script src="script.js"></script>
   <script>
-    let lastFilter = {};
-
-    async function checkFilterUpdate() {
-      try {
-        const res = await fetch('https://excellent-frill-smash.glitch.me/api/filter');
-        const filter = await res.json();
-
-        if (JSON.stringify(filter) !== JSON.stringify(lastFilter)) {
-          lastFilter = filter;
-          filterProducts(filter.category, filter.brand);
-        }
-      } catch (error) {
-        console.error('Error fetching filter:', error);
-      }
-    }
-
-    setInterval(checkFilterUpdate, 2000);
-
     // Initialize cart overlay
     document.getElementById('cart-overlay').style.display = 'none';
+
+    // Check if we should open cart from API request
+    fetch('https://excellent-frill-smash.glitch.me/api/filter')
+      .then(res => res.json())
+      .then(data => {
+        if (data.openCart) {
+          handleCartOpen();
+        }
+      })
+      .catch(console.error);
   </script>
 </body>
 </html> 
