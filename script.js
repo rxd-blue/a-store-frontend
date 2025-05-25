@@ -15,11 +15,18 @@ function filterProducts(category, brand) {
   products.forEach(p => {
     const cat = p.dataset.category;
     const br = p.dataset.brand;
-    if ((category && cat !== category) || (brand && br !== brand)) {
-      p.style.display = 'none';
-    } else {
-      p.style.display = 'flex';
+    
+    // Show all products if both filters are empty
+    if (!category && !brand) {
+      p.style.display = 'block';
+      return;
     }
+    
+    // Handle individual filters
+    const categoryMatch = !category || cat === category;
+    const brandMatch = !brand || br === brand;
+    
+    p.style.display = (categoryMatch && brandMatch) ? 'block' : 'none';
   });
 }
 
@@ -67,6 +74,7 @@ async function renderCartOverlay() {
             <h3>${item.name}</h3>
             <p>${item.category || ''}</p>
           </div>
+          <button onclick="removeFromCart('${item.name}')" class="remove-btn">✕</button>
         `;
         container.appendChild(div);
       });
@@ -104,6 +112,28 @@ async function addToCart(name, category) {
   }
 }
 
+// Remove from cart function
+async function removeFromCart(name) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/cart/remove`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ name })
+    });
+
+    if (!res.ok) {
+      throw new Error(`HTTP error! status: ${res.status}`);
+    }
+
+    await renderCartOverlay();
+  } catch (error) {
+    console.error('Error removing from cart:', error);
+    alert('❌ حدث خطأ في حذف المنتج');
+  }
+}
+
 // Start polling for cart updates
 function startCartUpdates() {
   setInterval(async () => {
@@ -116,10 +146,22 @@ function startCartUpdates() {
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
   startCartUpdates();
+  
+  // Handle filter API updates
+  setInterval(async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/filter`);
+      const data = await res.json();
+      filterProducts(data.category || '', data.brand || '');
+    } catch (error) {
+      console.error('Error checking filters:', error);
+    }
+  }, POLLING_INTERVAL);
 });
 
 // Export functions for global use
 window.openCart = openCart;
 window.closeCart = closeCart;
 window.addToCart = addToCart;
+window.removeFromCart = removeFromCart;
 window.filterProducts = filterProducts; 
