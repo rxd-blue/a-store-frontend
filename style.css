@@ -1,0 +1,19 @@
+body {
+  font-family: Arial, sans-serif;
+  direction: rtl;
+  text-align: right;
+  margin: 20px;
+}
+
+.product, #cart-items > div {
+  border: 1px solid #ccc;
+  padding: 10px;
+  margin: 5px;
+  display: inline-block;
+}
+
+button {
+  padding: 10px 20px;
+  margin-top: 20px;
+  cursor: pointer;
+} 

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>منتجاتنا</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>📦 المنتجات</h1>
+
+  <div class="product" data-category="تليفونات" data-brand="سامسونج">Samsung A23</div>
+  <div class="product" data-category="تليفونات" data-brand="شاومي">Xiaomi Note 12</div>
+  <div class="product" data-category="غسالات" data-brand="LG">LG WashPro</div>
+  <div class="product" data-category="غسالات" data-brand="سامسونج">Samsung WashX</div>
+
+  <a href="cart.html">🛒 الذهاب إلى عربة الشراء</a>
+
+  <script src="script.js"></script>
+  <script>
+    let lastFilter = {};
+
+    async function checkFilterUpdate() {
+      try {
+        const res = await fetch('https://YOUR-RENDER-URL.onrender.com/api/filter');
+        const filter = await res.json();
+
+        if (JSON.stringify(filter) !== JSON.stringify(lastFilter)) {
+          lastFilter = filter;
+          filterProducts(filter.category, filter.brand);
+        }
+      } catch (error) {
+        console.error('Error fetching filter:', error);
+      }
+    }
+
+    setInterval(checkFilterUpdate, 2000);
+  </script>
+</body>
+</html> 

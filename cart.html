@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>عربة الشراء</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>🛒 عربة الشراء</h1>
+
+  <div id="cart-items"></div>
+
+  <button onclick="completePurchase()">إتمام الشراء</button>
+  <br><br>
+  <a href="index.html">↩️ العودة إلى المنتجات</a>
+
+  <script src="script.js"></script>
+  <script>
+    renderCart();
+
+    async function completePurchase() {
+      await fetch('https://YOUR-RENDER-URL.onrender.com/api/cart/reset', {
+        method: 'POST'
+      });
+      alert('✅ تم الشراء!');
+      window.location.href = 'index.html';
+    }
+  </script>
+</body>
+</html> 
