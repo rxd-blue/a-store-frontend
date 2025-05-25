@@ -18,7 +18,7 @@ function filterProducts(category, brand) {
     
     // Show all products if both filters are empty
     if (!category && !brand) {
-      p.style.display = 'block';
+      p.style.display = 'flex';
       return;
     }
     
@@ -26,7 +26,7 @@ function filterProducts(category, brand) {
     const categoryMatch = !category || cat === category;
     const brandMatch = !brand || br === brand;
     
-    p.style.display = (categoryMatch && brandMatch) ? 'block' : 'none';
+    p.style.display = (categoryMatch && brandMatch) ? 'flex' : 'none';
   });
 }
 
@@ -52,11 +52,6 @@ async function renderCartOverlay() {
   try {
     const res = await fetch(`${API_BASE_URL}/api/cart`);
     const cart = await res.json();
-    
-    // Check if cart contents have changed
-    if (JSON.stringify(cart) === JSON.stringify(CartState.items)) {
-      return;
-    }
     
     CartState.items = cart;
     const container = document.getElementById('cart-overlay-items');
@@ -146,17 +141,6 @@ function startCartUpdates() {
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
   startCartUpdates();
-  
-  // Handle filter API updates
-  setInterval(async () => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/filter`);
-      const data = await res.json();
-      filterProducts(data.category || '', data.brand || '');
-    } catch (error) {
-      console.error('Error checking filters:', error);
-    }
-  }, POLLING_INTERVAL);
 });
 
 // Export functions for global use
