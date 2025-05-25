@@ -8,7 +8,7 @@ const CartState = {
 
 // Constants
 const API_BASE_URL = 'https://excellent-frill-smash.glitch.me';
-const POLLING_INTERVAL = 500; // ms
+const POLLING_INTERVAL = 2000; // ms
 
 function filterProducts(category, brand) {
   const products = document.querySelectorAll('.product');
@@ -30,10 +30,6 @@ function openCart() {
   const cartOverlay = document.getElementById('cart-overlay');
   cartOverlay.style.display = 'block';
   CartState.isOpen = true;
-  
-  // Show initial loading state
-  const container = document.getElementById('cart-overlay-items');
-  container.innerHTML = '<div class="cart-item loading">جاري التحميل...</div>';
   
   // Add class to body to prevent scrolling
   document.body.classList.add('cart-open');

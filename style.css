@@ -12,10 +12,46 @@ body.cart-open {
   overflow: hidden;
 }
 
+header {
+  margin-bottom: 30px;
+}
+
+h1 {
+  margin: 0 0 20px 0;
+  color: #333;
+}
+
+.filters {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.filters select {
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background-color: white;
+  font-size: 16px;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filters select:hover {
+  border-color: #4CAF50;
+}
+
+.filters select:focus {
+  outline: none;
+  border-color: #4CAF50;
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+}
+
 .products-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 25px;
   padding: 20px 0;
 }
 
@@ -36,14 +72,26 @@ body.cart-open {
   box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
+.product-content {
+  flex-grow: 1;
+}
+
 .product h3 {
   margin: 0 0 10px 0;
   color: #333;
+  font-size: 1.2em;
 }
 
 .product p {
   margin: 0;
   color: #666;
+}
+
+.price {
+  font-size: 1.2em;
+  color: #4CAF50 !important;
+  font-weight: bold;
+  margin-top: 10px !important;
 }
 
 button {
@@ -195,20 +243,21 @@ button {
   margin-top: 20px;
   padding-top: 20px;
   border-top: 1px solid #eee;
+  gap: 10px;
 }
 
 .cart-actions button {
   flex: 1;
-  margin: 0 5px;
   padding: 12px 20px;
+  font-weight: bold;
 }
 
-.cart-actions button:first-child {
+.checkout-btn {
   background-color: #4CAF50;
   color: white;
 }
 
-.cart-actions button:last-child {
+.close-btn {
   background-color: #f5f5f5;
   color: #333;
 }
@@ -304,6 +353,10 @@ button {
   .products-grid {
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 15px;
+  }
+  
+  .filters {
+    flex-direction: column;
   }
   
   .toast {
