@@ -12,7 +12,7 @@ function filterProducts(category, brand) {
 }
 
 async function renderCart() {
-  const res = await fetch('https://YOUR-RENDER-URL.onrender.com/api/cart');
+  const res = await fetch('https://excellent-frill-smash.glitch.me/api/cart');
   const cart = await res.json();
   const container = document.getElementById('cart-items');
 
