@@ -1,6 +1,14 @@
-// Global state
-let isCartOpen = false;
-let lastCartItems = [];
+// Cart state management
+const CartState = {
+  isOpen: false,
+  items: [],
+  isLoading: false,
+  error: null
+};
+
+// Constants
+const API_BASE_URL = 'https://excellent-frill-smash.glitch.me';
+const POLLING_INTERVAL = 500; // ms
 
 function filterProducts(category, brand) {
   const products = document.querySelectorAll('.product');
@@ -15,50 +23,65 @@ function filterProducts(category, brand) {
   });
 }
 
-// Function to open cart overlay
+// Function to open cart overlay with loading state
 function openCart() {
+  if (CartState.isOpen) return;
+  
   const cartOverlay = document.getElementById('cart-overlay');
-  if (!isCartOpen) {
-    cartOverlay.style.display = 'block';
-    isCartOpen = true;
-    renderCartOverlay();
-  }
+  cartOverlay.style.display = 'block';
+  CartState.isOpen = true;
+  
+  // Show initial loading state
+  const container = document.getElementById('cart-overlay-items');
+  container.innerHTML = '<div class="cart-item loading">جاري التحميل...</div>';
+  
+  renderCartOverlay();
 }
 
 // Function to close cart overlay
 function closeCart() {
   const cartOverlay = document.getElementById('cart-overlay');
   cartOverlay.style.display = 'none';
-  isCartOpen = false;
+  CartState.isOpen = false;
+  CartState.error = null;
 }
 
+// Optimized cart rendering with error handling
 async function renderCartOverlay() {
-  if (!isCartOpen) return;
+  if (!CartState.isOpen) return;
 
   try {
-    const res = await fetch('https://excellent-frill-smash.glitch.me/api/cart');
+    CartState.isLoading = true;
+    const res = await fetch(`${API_BASE_URL}/api/cart`);
+    
+    if (!res.ok) {
+      throw new Error(`HTTP error! status: ${res.status}`);
+    }
+    
     const cart = await res.json();
     
     // Check if cart contents have changed
-    if (JSON.stringify(cart) === JSON.stringify(lastCartItems)) {
-      return; // No changes, don't re-render
+    if (JSON.stringify(cart) === JSON.stringify(CartState.items)) {
+      CartState.isLoading = false;
+      return;
     }
     
-    lastCartItems = cart; // Update last known state
+    CartState.items = cart;
     const container = document.getElementById('cart-overlay-items');
     
-    // Clear existing items with fade-out
+    // Smooth transition for content update
     container.style.opacity = '0';
     
     setTimeout(() => {
       container.innerHTML = '';
 
       if (cart.length === 0) {
-        container.innerHTML = '<p>العربة فاضية</p>';
+        container.innerHTML = '<div class="cart-empty">🛒 العربة فاضية</div>';
       } else {
-        cart.forEach(item => {
+        cart.forEach((item, index) => {
           const div = document.createElement('div');
           div.className = 'cart-item';
+          div.style.animationDelay = `${index * 100}ms`;
           div.innerHTML = `
             <h3>${item.name}</h3>
             <p>${item.category || ''}</p>
@@ -67,29 +90,42 @@ async function renderCartOverlay() {
         });
       }
       
-      // Fade in new content
       container.style.opacity = '1';
     }, 300);
     
   } catch (error) {
     console.error('Error fetching cart:', error);
+    CartState.error = error;
     const container = document.getElementById('cart-overlay-items');
-    container.innerHTML = '<p>❌ حدث خطأ في تحميل العربة</p>';
+    container.innerHTML = `
+      <div class="cart-error">
+        <p>❌ عذراً، حدث خطأ في تحميل العربة</p>
+        <button onclick="retryCartLoad()">إعادة المحاولة</button>
+      </div>
+    `;
+  } finally {
+    CartState.isLoading = false;
   }
 }
 
-// Function to add product to cart
+// Retry mechanism for cart loading
+async function retryCartLoad() {
+  CartState.error = null;
+  await renderCartOverlay();
+}
+
+// Enhanced add to cart with proper error handling
 async function addToCart(name, category) {
   try {
-    // First ensure cart is open and visible
     openCart();
     
-    // Show loading state
     const container = document.getElementById('cart-overlay-items');
-    container.innerHTML += '<div class="cart-item loading">جاري الإضافة...</div>';
+    const loadingItem = document.createElement('div');
+    loadingItem.className = 'cart-item loading';
+    loadingItem.innerHTML = 'جاري إضافة المنتج...';
+    container.appendChild(loadingItem);
     
-    // Add the product
-    await fetch('https://excellent-frill-smash.glitch.me/api/cart/add', {
+    const res = await fetch(`${API_BASE_URL}/api/cart/add`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -97,30 +133,58 @@ async function addToCart(name, category) {
       body: JSON.stringify({ name, category })
     });
 
-    // Remove loading state and update cart
-    const loadingItems = container.querySelectorAll('.loading');
-    loadingItems.forEach(item => item.remove());
+    if (!res.ok) {
+      throw new Error(`HTTP error! status: ${res.status}`);
+    }
+
+    loadingItem.remove();
     await renderCartOverlay();
+    
+    // Show success message
+    const successMsg = document.createElement('div');
+    successMsg.className = 'cart-success-message';
+    successMsg.textContent = '✅ تمت الإضافة بنجاح';
+    container.appendChild(successMsg);
+    setTimeout(() => successMsg.remove(), 2000);
     
   } catch (error) {
     console.error('Error adding to cart:', error);
-    alert('❌ حدث خطأ');
+    const errorMsg = document.createElement('div');
+    errorMsg.className = 'cart-error-message';
+    errorMsg.textContent = '❌ حدث خطأ في إضافة المنتج';
+    container.appendChild(errorMsg);
+    setTimeout(() => errorMsg.remove(), 3000);
   }
 }
 
-// Continuous polling for cart updates
+// Optimized polling with error backoff
+let pollAttempts = 0;
+const MAX_POLL_ATTEMPTS = 3;
+
 function startCartUpdates() {
-  // Check every 500ms for cart updates when cart is open
   setInterval(async () => {
-    if (isCartOpen) {
-      await renderCartOverlay();
+    if (CartState.isOpen && !CartState.isLoading) {
+      try {
+        await renderCartOverlay();
+        pollAttempts = 0; // Reset attempts on success
+      } catch (error) {
+        pollAttempts++;
+        if (pollAttempts >= MAX_POLL_ATTEMPTS) {
+          console.error('Polling stopped due to consecutive errors');
+          return;
+        }
+      }
     }
-  }, 500);
+  }, POLLING_INTERVAL);
 }
 
-// Initialize
+// Initialize with error handling
 document.addEventListener('DOMContentLoaded', () => {
-  startCartUpdates();
+  try {
+    startCartUpdates();
+  } catch (error) {
+    console.error('Failed to initialize cart updates:', error);
+  }
 });
 
 // Listen for filter updates
@@ -156,4 +220,5 @@ async function handleCartOpen() {
 window.openCart = openCart;
 window.closeCart = closeCart;
 window.addToCart = addToCart;
-window.handleCartOpen = handleCartOpen; 
+window.handleCartOpen = handleCartOpen;
+window.retryCartLoad = retryCartLoad; 
