@@ -18,12 +18,12 @@ function filterProducts(category, brand) {
     if ((category && cat !== category) || (brand && br !== brand)) {
       p.style.display = 'none';
     } else {
-      p.style.display = 'inline-block';
+      p.style.display = 'flex';
     }
   });
 }
 
-// Function to open cart overlay with loading state
+// Function to open cart overlay
 function openCart() {
   if (CartState.isOpen) return;
   
@@ -35,6 +35,9 @@ function openCart() {
   const container = document.getElementById('cart-overlay-items');
   container.innerHTML = '<div class="cart-item loading">جاري التحميل...</div>';
   
+  // Add class to body to prevent scrolling
+  document.body.classList.add('cart-open');
+  
   renderCartOverlay();
 }
 
@@ -44,6 +47,9 @@ function closeCart() {
   cartOverlay.style.display = 'none';
   CartState.isOpen = false;
   CartState.error = null;
+  
+  // Remove class from body to enable scrolling
+  document.body.classList.remove('cart-open');
 }
 
 // Optimized cart rendering with error handling
@@ -83,8 +89,11 @@ async function renderCartOverlay() {
           div.className = 'cart-item';
           div.style.animationDelay = `${index * 100}ms`;
           div.innerHTML = `
-            <h3>${item.name}</h3>
-            <p>${item.category || ''}</p>
+            <div class="cart-item-content">
+              <h3>${item.name}</h3>
+              <p>${item.category || ''}</p>
+            </div>
+            <button onclick="removeFromCart('${item.name}')" class="remove-item">✕</button>
           `;
           container.appendChild(div);
         });
@@ -108,22 +117,13 @@ async function renderCartOverlay() {
   }
 }
 
-// Retry mechanism for cart loading
-async function retryCartLoad() {
-  CartState.error = null;
-  await renderCartOverlay();
-}
-
 // Enhanced add to cart with proper error handling
 async function addToCart(name, category) {
   try {
-    openCart();
-    
-    const container = document.getElementById('cart-overlay-items');
-    const loadingItem = document.createElement('div');
-    loadingItem.className = 'cart-item loading';
-    loadingItem.innerHTML = 'جاري إضافة المنتج...';
-    container.appendChild(loadingItem);
+    const loadingToast = document.createElement('div');
+    loadingToast.className = 'toast loading';
+    loadingToast.textContent = 'جاري إضافة المنتج...';
+    document.body.appendChild(loadingToast);
     
     const res = await fetch(`${API_BASE_URL}/api/cart/add`, {
       method: 'POST',
@@ -137,24 +137,56 @@ async function addToCart(name, category) {
       throw new Error(`HTTP error! status: ${res.status}`);
     }
 
-    loadingItem.remove();
-    await renderCartOverlay();
+    loadingToast.remove();
     
-    // Show success message
-    const successMsg = document.createElement('div');
-    successMsg.className = 'cart-success-message';
-    successMsg.textContent = '✅ تمت الإضافة بنجاح';
-    container.appendChild(successMsg);
-    setTimeout(() => successMsg.remove(), 2000);
+    // Show success toast
+    const successToast = document.createElement('div');
+    successToast.className = 'toast success';
+    successToast.textContent = '✅ تمت الإضافة بنجاح';
+    document.body.appendChild(successToast);
+    
+    // Remove success toast after animation
+    setTimeout(() => successToast.remove(), 2000);
+    
+    // Only open cart after successful addition
+    openCart();
+    await renderCartOverlay();
     
   } catch (error) {
     console.error('Error adding to cart:', error);
-    const errorMsg = document.createElement('div');
-    errorMsg.className = 'cart-error-message';
-    errorMsg.textContent = '❌ حدث خطأ في إضافة المنتج';
-    container.appendChild(errorMsg);
-    setTimeout(() => errorMsg.remove(), 3000);
+    const errorToast = document.createElement('div');
+    errorToast.className = 'toast error';
+    errorToast.textContent = '❌ حدث خطأ في إضافة المنتج';
+    document.body.appendChild(errorToast);
+    setTimeout(() => errorToast.remove(), 3000);
   }
+}
+
+// Remove from cart function
+async function removeFromCart(name) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/cart/remove`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ name })
+    });
+
+    if (!res.ok) {
+      throw new Error(`HTTP error! status: ${res.status}`);
+    }
+
+    await renderCartOverlay();
+  } catch (error) {
+    console.error('Error removing from cart:', error);
+  }
+}
+
+// Retry mechanism for cart loading
+async function retryCartLoad() {
+  CartState.error = null;
+  await renderCartOverlay();
 }
 
 // Optimized polling with error backoff
@@ -178,10 +210,24 @@ function startCartUpdates() {
   }, POLLING_INTERVAL);
 }
 
+// Close cart when clicking outside
+document.addEventListener('click', (e) => {
+  if (CartState.isOpen && e.target.classList.contains('cart-overlay')) {
+    closeCart();
+  }
+});
+
 // Initialize with error handling
 document.addEventListener('DOMContentLoaded', () => {
   try {
     startCartUpdates();
+    
+    // Add keyboard support for closing cart
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && CartState.isOpen) {
+        closeCart();
+      }
+    });
   } catch (error) {
     console.error('Failed to initialize cart updates:', error);
   }
@@ -221,4 +267,5 @@ window.openCart = openCart;
 window.closeCart = closeCart;
 window.addToCart = addToCart;
 window.handleCartOpen = handleCartOpen;
-window.retryCartLoad = retryCartLoad; 
+window.retryCartLoad = retryCartLoad;
+window.removeFromCart = removeFromCart; 
